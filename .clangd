@@ -1,0 +1,5 @@
+CompileFlags:
+  CompilationDatabase: build
+  Add:
+    - "-IG:/Programs/msys64/mingw64/include"
+    - "--target=x86_64-w64-mingw32"
