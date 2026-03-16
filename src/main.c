@@ -4,19 +4,28 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define SCREEN_WIDTH  800
 #define SCREEN_HEIGHT 600
 
 static uint32_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
-struct point 
+struct point
 {
     int x;
     int y;
 };
 
+struct vec3
+{
+    float x;
+    float y;
+    float z;
+};
+
 void draw_line(int *x1, int *y1, int *x2, int *y2);
+
 
 /* ---------- Color Helpers ---------- */
 static inline uint32_t color_rgb(uint8_t r, uint8_t g, uint8_t b)
@@ -43,47 +52,93 @@ static void clear_screen(uint32_t color)
      * we need this loop. */
 }
 
+/* cube verts — centered at origin */
+static const struct vec3 vert[8] = {
+    {-100,  100, -100},  /* 0: left  top    front */
+    { 100,  100, -100},  /* 1: right top    front */
+    { 100, -100, -100},  /* 2: right bottom front */
+    {-100, -100, -100},  /* 3: left  bottom front */
+    {-100,  100,  100},  /* 4: left  top    back  */
+    { 100,  100,  100},  /* 5: right top    back  */
+    { 100, -100,  100},  /* 6: right bottom back  */
+    {-100, -100,  100},  /* 7: left  bottom back  */
+};
+
+static float angle_y = 0.0f;
+static float angle_x = 0.0f;
+static float angle_z = 0.0f;
+
 /* ---------- The Render Function ---------- */
 static void render(void)
 {
-    /* Step 1: Clear to a dark blue-gray background */
     clear_screen(color_rgb(20, 20, 40));
 
-    /* All 8 octants radiating from center (400, 300) */
-    int cx = 400, cy = 300;
-    int x, y, x2, y2;
+    angle_y = fmodf(angle_y + 0.010f, 2.0f * (float)M_PI);
+    angle_x = fmodf(angle_x + 0.005f, 2.0f * (float)M_PI);
+    angle_z = fmodf(angle_z + 0.007f, 2.0f * (float)M_PI);
 
-    /* Octant 1: shallow right-down  (~18.43°)  */
-    x = cx; y = cy; x2 = 700; y2 = 400;
-    draw_line(&x, &y, &x2, &y2);
+    float cy = cosf(angle_y), sy = sinf(angle_y);
+    float cx = cosf(angle_x), sx = sinf(angle_x);
+    float cz = cosf(angle_z), sz = sinf(angle_z);
 
-    /* Octant 2: steep right-down    (~71.57°)  */
-    x = cx; y = cy; x2 = 500; y2 = 600;
-    draw_line(&x, &y, &x2, &y2);
+    for (int i = 0; i < 8; i++)
+    {
+        /* rotate Y */
+        float rx  = vert[i].x * cy - vert[i].z * sy;
+        float ry  = vert[i].y;
+        float rz  = vert[i].x * sy + vert[i].z * cy;
 
-    /* Octant 3: steep left-down     (~108.43°) */
-    x = cx; y = cy; x2 = 300; y2 = 600;
-    draw_line(&x, &y, &x2, &y2);
+        /* rotate X */
+        float rx2 = rx;
+        float ry2 = ry * cx - rz * sx;
+        float rz2 = ry * sx + rz * cx;
 
-    /* Octant 4: shallow left-down   (~161.57°) */
-    x = cx; y = cy; x2 = 100; y2 = 400;
-    draw_line(&x, &y, &x2, &y2);
+        /* rotate Z */
+        float rx3 = rx2 * cz - ry2 * sz;
+        float ry3 = rx2 * sz + ry2 * cz;
+        float rz3 = rz2;
 
-    /* Octant 5: shallow left-up     (~198.43°) */
-    x = cx; y = cy; x2 = 100; y2 = 200;
-    draw_line(&x, &y, &x2, &y2);
+        put_pixel((int)(rx3 / (rz3 + 300) * 300 + 400),
+                  (int)(ry3 / (rz3 + 300) * 300 + 300),
+                  color_rgb(0, 255, 0));
+    }
 
-    /* Octant 6: steep left-up       (~251.57°) */
-    x = cx; y = cy; x2 = 300; y2 = 0;
-    draw_line(&x, &y, &x2, &y2);
 
-    /* Octant 7: steep right-up      (~288.43°) */
-    x = cx; y = cy; x2 = 500; y2 = 0;
-    draw_line(&x, &y, &x2, &y2);
+    // /* All 8 octants radiating from center (400, 300) */
+    // int cx = 400, cy = 300;
+    // int x, y, x2, y2;
 
-    /* Octant 8: shallow right-up    (~341.57°) */
-    x = cx; y = cy; x2 = 700; y2 = 200;
-    draw_line(&x, &y, &x2, &y2);
+    // /* Octant 1: shallow right-down  (~18.43°)  */
+    // x = cx; y = cy; x2 = 700; y2 = 400;
+    // draw_line(&x, &y, &x2, &y2);
+
+    // /* Octant 2: steep right-down    (~71.57°)  */
+    // x = cx; y = cy; x2 = 500; y2 = 600;
+    // draw_line(&x, &y, &x2, &y2);
+
+    // /* Octant 3: steep left-down     (~108.43°) */
+    // x = cx; y = cy; x2 = 300; y2 = 600;
+    // draw_line(&x, &y, &x2, &y2);
+
+    // /* Octant 4: shallow left-down   (~161.57°) */
+    // x = cx; y = cy; x2 = 100; y2 = 400;
+    // draw_line(&x, &y, &x2, &y2);
+
+    // /* Octant 5: shallow left-up     (~198.43°) */
+    // x = cx; y = cy; x2 = 100; y2 = 200;
+    // draw_line(&x, &y, &x2, &y2);
+
+    // /* Octant 6: steep left-up       (~251.57°) */
+    // x = cx; y = cy; x2 = 300; y2 = 0;
+    // draw_line(&x, &y, &x2, &y2);
+
+    // /* Octant 7: steep right-up      (~288.43°) */
+    // x = cx; y = cy; x2 = 500; y2 = 0;
+    // draw_line(&x, &y, &x2, &y2);
+
+    // /* Octant 8: shallow right-up    (~341.57°) */
+    // x = cx; y = cy; x2 = 700; y2 = 200;
+    // draw_line(&x, &y, &x2, &y2);
 
 }
 
