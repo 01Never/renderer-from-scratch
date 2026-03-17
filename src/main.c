@@ -11,20 +11,26 @@
 
 static uint32_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
-struct point
+typedef struct
 {
     int x;
     int y;
-};
+} point;
 
-struct vec3
+typedef struct
 {
     float x;
     float y;
     float z;
-};
+} vec3;
 
-void draw_line(int *x1, int *y1, int *x2, int *y2);
+typedef struct
+{
+    float x;
+    float y;
+} vec2;
+
+void draw_line(point p1, point p2);
 
 
 /* ---------- Color Helpers ---------- */
@@ -53,7 +59,7 @@ static void clear_screen(uint32_t color)
 }
 
 /* cube verts — centered at origin */
-static const struct vec3 vert[8] = {
+static const vec3 vert[8] = {
     {-100,  100, -100},  /* 0: left  top    front */
     { 100,  100, -100},  /* 1: right top    front */
     { 100, -100, -100},  /* 2: right bottom front */
@@ -62,6 +68,17 @@ static const struct vec3 vert[8] = {
     { 100,  100,  100},  /* 5: right top    back  */
     { 100, -100,  100},  /* 6: right bottom back  */
     {-100, -100,  100},  /* 7: left  bottom back  */
+};
+
+static point vert2[8] = {
+    {0, 0},  /* 0: left  top    front */
+    {0, 0},  /* 1: right top    front */
+    {0, 0},  /* 2: right bottom front */
+    {0, 0},  /* 3: left  bottom front */
+    {0, 0},  /* 4: left  top    back  */
+    {0, 0},  /* 5: right top    back  */
+    {0, 0},  /* 6: right bottom back  */
+    {0, 0},  /* 7: left  bottom back  */
 };
 
 static float angle_y = 0.0f;
@@ -98,47 +115,64 @@ static void render(void)
         float ry3 = rx2 * sz + ry2 * cz;
         float rz3 = rz2;
 
-        put_pixel((int)(rx3 / (rz3 + 300) * 300 + 400),
-                  (int)(ry3 / (rz3 + 300) * 300 + 300),
+        vert2[i].x = (int)(rx3 / (rz3 + 300) * 300 + 400);
+        vert2[i].y = (int)(ry3 / (rz3 + 300) * 300 + 300);
+
+        // vert2[i].x = (int)(rx3 + 400);
+        // vert2[i].y = (int)(ry3 + 300);
+
+        put_pixel((vert2[i].x),
+                  (vert2[i].y),
                   color_rgb(0, 255, 0));
+        
     }
 
+    /* front face */
+    draw_line(vert2[0], vert2[1]);
+    draw_line(vert2[1], vert2[2]);
+    draw_line(vert2[2], vert2[3]);
+    draw_line(vert2[3], vert2[0]);
 
-    // /* All 8 octants radiating from center (400, 300) */
-    // int cx = 400, cy = 300;
-    // int x, y, x2, y2;
+    /* back face */
+    draw_line(vert2[4], vert2[5]);
+    draw_line(vert2[5], vert2[6]);
+    draw_line(vert2[6], vert2[7]);
+    draw_line(vert2[7], vert2[4]);
+
+    /* connecting edges */
+    draw_line(vert2[0], vert2[4]);
+    draw_line(vert2[1], vert2[5]);
+    draw_line(vert2[2], vert2[6]);
+    draw_line(vert2[3], vert2[7]);
+    
+
+
+    /* All 8 octants radiating from center (400, 300) */
+    // point center = {400, 300};
 
     // /* Octant 1: shallow right-down  (~18.43°)  */
-    // x = cx; y = cy; x2 = 700; y2 = 400;
-    // draw_line(&x, &y, &x2, &y2);
+    // draw_line(center, (point){700, 400});
 
     // /* Octant 2: steep right-down    (~71.57°)  */
-    // x = cx; y = cy; x2 = 500; y2 = 600;
-    // draw_line(&x, &y, &x2, &y2);
+    // draw_line(center, (point){500, 600});
 
     // /* Octant 3: steep left-down     (~108.43°) */
-    // x = cx; y = cy; x2 = 300; y2 = 600;
-    // draw_line(&x, &y, &x2, &y2);
+    // draw_line(center, (point){300, 600});
 
     // /* Octant 4: shallow left-down   (~161.57°) */
-    // x = cx; y = cy; x2 = 100; y2 = 400;
-    // draw_line(&x, &y, &x2, &y2);
+    // draw_line(center, (point){100, 400});
 
     // /* Octant 5: shallow left-up     (~198.43°) */
-    // x = cx; y = cy; x2 = 100; y2 = 200;
-    // draw_line(&x, &y, &x2, &y2);
+    // draw_line(center, (point){100, 200});
 
     // /* Octant 6: steep left-up       (~251.57°) */
-    // x = cx; y = cy; x2 = 300; y2 = 0;
-    // draw_line(&x, &y, &x2, &y2);
+    // draw_line(center, (point){300, 0});
 
     // /* Octant 7: steep right-up      (~288.43°) */
-    // x = cx; y = cy; x2 = 500; y2 = 0;
-    // draw_line(&x, &y, &x2, &y2);
+    // draw_line(center, (point){500, 0});
 
     // /* Octant 8: shallow right-up    (~341.57°) */
-    // x = cx; y = cy; x2 = 700; y2 = 200;
-    // draw_line(&x, &y, &x2, &y2);
+    // draw_line(center, (point){700, 200});
 
 }
 
@@ -279,7 +313,7 @@ int main(int argc, char *argv[])
 }
 
 
-void draw_line(int *x1, int *y1, int *x2, int *y2)
+void draw_line(point p1, point p2)
 {
 
     int *major_1;
@@ -294,14 +328,14 @@ void draw_line(int *x1, int *y1, int *x2, int *y2)
     int slope;
     int error = 0;
 
-    if((abs(*x1 - *x2) > abs(*y1 -*y2)))
+    if((abs(p1.x - p2.x) > abs(p1.y - p2.y)))
     {
-        direction =  (*x1 < *x2) ? 1 : 0;
-        major_1 = direction ? x1 : x2;
-        major_2 = direction ? x2 : x1;
+        direction =  (p1.x < p2.x) ? 1 : 0;
+        major_1 = direction ? &p1.x : &p2.x;
+        major_2 = direction ? &p2.x : &p1.x;
         
-        minor_1 = direction ? y1 : y2;
-        minor_2 = direction ? y2 : y1;  
+        minor_1 = direction ? &p1.y : &p2.y;
+        minor_2 = direction ? &p2.y : &p1.y;  
         
         delta_major = *major_2 - *major_1;
         delta_minor = abs(*minor_2 - *minor_1);
@@ -309,12 +343,12 @@ void draw_line(int *x1, int *y1, int *x2, int *y2)
     }
     else 
     {
-        direction =  (*y1 < *y2) ? 1 : 0;
-        major_1 = direction ? y1 : y2;
-        major_2 = direction ? y2 : y1;
+        direction =  (p1.y < p2.y) ? 1 : 0;
+        major_1 = direction ? &p1.y : &p2.y;
+        major_2 = direction ? &p2.y : &p1.y;
         
-        minor_1 = direction ? x1 : x2;
-        minor_2 = direction ? x2 : x1; 
+        minor_1 = direction ? &p1.x : &p2.x;
+        minor_2 = direction ? &p2.x : &p1.x; 
         
         delta_major = *major_2 - *major_1;
         delta_minor = abs(*minor_2 - *minor_1);
@@ -331,6 +365,6 @@ while( *major_1 <= *major_2)
         error -= 2*(delta_major);
     }    
 
-    direction ? put_pixel(*x1, *y1, color_rgb(255, 0, 0)) : put_pixel(*x2, *y2, color_rgb(255, 0, 0)) ;
+    direction ? put_pixel(p1.x, p1.y, color_rgb(255, 0, 0)) : put_pixel(p2.x, p2.y, color_rgb(255, 0, 0)) ;
     }
 }
