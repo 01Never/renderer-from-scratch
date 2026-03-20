@@ -32,6 +32,34 @@ typedef struct
 
 void draw_line(point p1, point p2);
 
+// /* ---------- OBJ Loader ---------- */
+// static vec3  *vert      = NULL;
+// static point *verts2d    = NULL;
+// static int    vert_count = 0;
+
+// static int load_obj(const char *path)
+// {
+//     FILE *f = fopen(path, "r");
+//     if (!f) { fprintf(stderr, "Could not open %s\n", path); return 0; }
+
+//     char line[256];
+//     while (fgets(line, sizeof(line), f))
+//     {
+//         if (line[0] == 'v' && line[1] == ' ')
+//         {
+//             vec3 v;
+//             if (sscanf(line, "v %f %f %f", &v.x, &v.y, &v.z) == 3)
+//             {
+//                 vert  = realloc(vert,  (vert_count + 1) * sizeof(vec3));
+//                 verts2d = realloc(verts2d, (vert_count + 1) * sizeof(point));
+//                 vert[vert_count] = v;
+//                 vert_count++;
+//             }
+//         }
+//     }
+//     fclose(f);
+//     return vert_count;
+// }
 
 /* ---------- Color Helpers ---------- */
 static inline uint32_t color_rgb(uint8_t r, uint8_t g, uint8_t b)
@@ -118,11 +146,12 @@ static void render(void)
         vert2[i].x = (int)(rx3 / (rz3 + 300) * 300 + 400);
         vert2[i].y = (int)(ry3 / (rz3 + 300) * 300 + 300);
 
+        /* Ortho aka no depth */
         // vert2[i].x = (int)(rx3 + 400);
         // vert2[i].y = (int)(ry3 + 300);
 
-        put_pixel((vert2[i].x),
-                  (vert2[i].y),
+        put_pixel((int)(rx3 / (rz3 + 300) * 300 + 400),
+                  (int)(ry3 / (rz3 + 300) * 300 + 300),
                   color_rgb(0, 255, 0));
         
     }
@@ -148,31 +177,31 @@ static void render(void)
 
 
     /* All 8 octants radiating from center (400, 300) */
-    // point center = {400, 300};
+    point center = {400, 300};
 
-    // /* Octant 1: shallow right-down  (~18.43°)  */
-    // draw_line(center, (point){700, 400});
+    /* Octant 1: shallow right-down  (~18.43°)  */
+    draw_line(center, (point){700, 400});
 
-    // /* Octant 2: steep right-down    (~71.57°)  */
-    // draw_line(center, (point){500, 600});
+    /* Octant 2: steep right-down    (~71.57°)  */
+    draw_line(center, (point){500, 600});
 
-    // /* Octant 3: steep left-down     (~108.43°) */
-    // draw_line(center, (point){300, 600});
+    /* Octant 3: steep left-down     (~108.43°) */
+    draw_line(center, (point){300, 600});
 
-    // /* Octant 4: shallow left-down   (~161.57°) */
-    // draw_line(center, (point){100, 400});
+    /* Octant 4: shallow left-down   (~161.57°) */
+    draw_line(center, (point){100, 400});
 
-    // /* Octant 5: shallow left-up     (~198.43°) */
-    // draw_line(center, (point){100, 200});
+    /* Octant 5: shallow left-up     (~198.43°) */
+    draw_line(center, (point){100, 200});
 
-    // /* Octant 6: steep left-up       (~251.57°) */
-    // draw_line(center, (point){300, 0});
+    /* Octant 6: steep left-up       (~251.57°) */
+    draw_line(center, (point){300, 0});
 
-    // /* Octant 7: steep right-up      (~288.43°) */
-    // draw_line(center, (point){500, 0});
+    /* Octant 7: steep right-up      (~288.43°) */
+    draw_line(center, (point){500, 0});
 
-    // /* Octant 8: shallow right-up    (~341.57°) */
-    // draw_line(center, (point){700, 200});
+    /* Octant 8: shallow right-up    (~341.57°) */
+    draw_line(center, (point){700, 200});
 
 }
 
@@ -263,6 +292,8 @@ int main(int argc, char *argv[])
      */
     bool running = true;
     SDL_Event event;
+    /* --- load obj ---*/
+    //load_obj("src/utah_teapot.obj");
 
     while (running) {
         /* --- Process Input --- */
