@@ -26,40 +26,81 @@ typedef struct
 
 typedef struct
 {
+    int x;
+    int y;
+    int z;
+} vert_idx;
+
+typedef struct
+{
+    vec3 a;
+    vec3 b;
+    vec3 c;
+} face;
+
+typedef struct
+{
     float x;
     float y;
 } vec2;
 
 void draw_line(point p1, point p2);
 
-// /* ---------- OBJ Loader ---------- */
-// static vec3  *vert      = NULL;
-// static point *verts2d    = NULL;
-// static int    vert_count = 0;
+/* ---------- OBJ Loader ---------- */
+static vec3  *vert      = NULL;
+static face  *facev      = NULL;
+static point *verts2d    = NULL;
+static int    vert_count = 0;
+static int    face_count = 0;
 
-// static int load_obj(const char *path)
-// {
-//     FILE *f = fopen(path, "r");
-//     if (!f) { fprintf(stderr, "Could not open %s\n", path); return 0; }
+static int load_obj(const char *path)
+{
+    FILE *f = fopen(path, "r");
+    if (!f) { fprintf(stderr, "Could not open %s\n", path); return 0; }
 
-//     char line[256];
-//     while (fgets(line, sizeof(line), f))
-//     {
-//         if (line[0] == 'v' && line[1] == ' ')
-//         {
-//             vec3 v;
-//             if (sscanf(line, "v %f %f %f", &v.x, &v.y, &v.z) == 3)
-//             {
-//                 vert  = realloc(vert,  (vert_count + 1) * sizeof(vec3));
-//                 verts2d = realloc(verts2d, (vert_count + 1) * sizeof(point));
-//                 vert[vert_count] = v;
-//                 vert_count++;
-//             }
-//         }
-//     }
-//     fclose(f);
-//     return vert_count;
-// }
+    char line[256];
+    while (fgets(line, sizeof(line), f))
+    {
+        if (line[0] == 'v' && line[1] == ' ')
+        {
+            vec3 v;
+            if (sscanf(line, "v %f %f %f", &v.x, &v.y, &v.z) == 3)
+            {
+                vert  = realloc(vert,  (vert_count + 1) * sizeof(vec3));
+                verts2d = realloc(verts2d, (vert_count + 1) * sizeof(point));
+                vert[vert_count] = v;
+                vert_count++;
+            }
+        }
+        else if (line[0] == 'f' && line[1] == ' ') 
+        {
+          face f;
+          vert_idx a;
+          vert_idx b;
+          vert_idx c;
+            if (sscanf(line, "f %d/%d/%d %d/%d/%d %d/%d/%d", &a.x, &a.y, &a.z, &b.x, &b.y, &b.z, &c.x, &c.y, &c.z) == 9)
+            {
+                facev  = realloc(facev,  (face_count + 1) * sizeof(face));
+                facev[face_count].a.x = (float)a.x ;
+                facev[face_count].a.y = (float)a.y ;
+                facev[face_count].a.z = (float)a.z ;
+
+                facev[face_count].b.x = (float)b.x;
+                facev[face_count].b.y = (float)b.y;
+                facev[face_count].b.z = (float)b.z;
+
+                facev[face_count].c.x = (float)c.x;
+                facev[face_count].c.y = (float)c.y;
+                facev[face_count].c.z = (float)c.z;
+                
+                face_count++;
+                printf("face x index: %d\n", (int)a.x);
+            }  
+        }
+    }
+    fclose(f);
+    return vert_count;
+}
 
 /* ---------- Color Helpers ---------- */
 static inline uint32_t color_rgb(uint8_t r, uint8_t g, uint8_t b)
@@ -87,16 +128,16 @@ static void clear_screen(uint32_t color)
 }
 
 /* cube verts — centered at origin */
-static const vec3 vert[8] = {
-    {-100,  100, -100},  /* 0: left  top    front */
-    { 100,  100, -100},  /* 1: right top    front */
-    { 100, -100, -100},  /* 2: right bottom front */
-    {-100, -100, -100},  /* 3: left  bottom front */
-    {-100,  100,  100},  /* 4: left  top    back  */
-    { 100,  100,  100},  /* 5: right top    back  */
-    { 100, -100,  100},  /* 6: right bottom back  */
-    {-100, -100,  100},  /* 7: left  bottom back  */
-};
+// static const vec3 vert[8] = {
+//     {-100,  100, -100},  /* 0: left  top    front */
+//     { 100,  100, -100},  /* 1: right top    front */
+//     { 100, -100, -100},  /* 2: right bottom front */
+//     {-100, -100, -100},  /* 3: left  bottom front */
+//     {-100,  100,  100},  /* 4: left  top    back  */
+//     { 100,  100,  100},  /* 5: right top    back  */
+//     { 100, -100,  100},  /* 6: right bottom back  */
+//     {-100, -100,  100},  /* 7: left  bottom back  */
+// };
 
 static point vert2[8] = {
     {0, 0},  /* 0: left  top    front */
@@ -126,7 +167,7 @@ static void render(void)
     float cx = cosf(angle_x), sx = sinf(angle_x);
     float cz = cosf(angle_z), sz = sinf(angle_z);
 
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < vert_count; i++)
     {
         /* rotate Y */
         float rx  = vert[i].x * cy - vert[i].z * sy;
@@ -143,65 +184,65 @@ static void render(void)
         float ry3 = rx2 * sz + ry2 * cz;
         float rz3 = rz2;
 
-        vert2[i].x = (int)(rx3 / (rz3 + 300) * 300 + 400);
-        vert2[i].y = (int)(ry3 / (rz3 + 300) * 300 + 300);
+        // vert2[i].x = (int)(rx3 / (rz3 + 300) * 300 + 400);
+        // vert2[i].y = (int)(ry3 / (rz3 + 300) * 300 + 300);
 
         /* Ortho aka no depth */
         // vert2[i].x = (int)(rx3 + 400);
         // vert2[i].y = (int)(ry3 + 300);
 
-        put_pixel((int)(rx3 / (rz3 + 300) * 300 + 400),
-                  (int)(ry3 / (rz3 + 300) * 300 + 300),
+        put_pixel((int)(rx3 / (rz3 + 10) * 300 + 400),
+                  (int)(ry3 / (rz3 + 10) * 300 + 300),
                   color_rgb(0, 255, 0));
         
     }
 
-    /* front face */
-    draw_line(vert2[0], vert2[1]);
-    draw_line(vert2[1], vert2[2]);
-    draw_line(vert2[2], vert2[3]);
-    draw_line(vert2[3], vert2[0]);
+    // /* front face */
+    // draw_line(vert2[0], vert2[1]);
+    // draw_line(vert2[1], vert2[2]);
+    // draw_line(vert2[2], vert2[3]);
+    // draw_line(vert2[3], vert2[0]);
 
-    /* back face */
-    draw_line(vert2[4], vert2[5]);
-    draw_line(vert2[5], vert2[6]);
-    draw_line(vert2[6], vert2[7]);
-    draw_line(vert2[7], vert2[4]);
+    // /* back face */
+    // draw_line(vert2[4], vert2[5]);
+    // draw_line(vert2[5], vert2[6]);
+    // draw_line(vert2[6], vert2[7]);
+    // draw_line(vert2[7], vert2[4]);
 
-    /* connecting edges */
-    draw_line(vert2[0], vert2[4]);
-    draw_line(vert2[1], vert2[5]);
-    draw_line(vert2[2], vert2[6]);
-    draw_line(vert2[3], vert2[7]);
+    // /* connecting edges */
+    // draw_line(vert2[0], vert2[4]);
+    // draw_line(vert2[1], vert2[5]);
+    // draw_line(vert2[2], vert2[6]);
+    // draw_line(vert2[3], vert2[7]);
     
 
 
     /* All 8 octants radiating from center (400, 300) */
-    point center = {400, 300};
+    // point center = {400, 300};
 
-    /* Octant 1: shallow right-down  (~18.43°)  */
-    draw_line(center, (point){700, 400});
+    // /* Octant 1: shallow right-down  (~18.43°)  */
+    // draw_line(center, (point){700, 400});
 
-    /* Octant 2: steep right-down    (~71.57°)  */
-    draw_line(center, (point){500, 600});
+    // /* Octant 2: steep right-down    (~71.57°)  */
+    // draw_line(center, (point){500, 600});
 
-    /* Octant 3: steep left-down     (~108.43°) */
-    draw_line(center, (point){300, 600});
+    // /* Octant 3: steep left-down     (~108.43°) */
+    // draw_line(center, (point){300, 600});
 
-    /* Octant 4: shallow left-down   (~161.57°) */
-    draw_line(center, (point){100, 400});
+    // /* Octant 4: shallow left-down   (~161.57°) */
+    // draw_line(center, (point){100, 400});
 
-    /* Octant 5: shallow left-up     (~198.43°) */
-    draw_line(center, (point){100, 200});
+    // /* Octant 5: shallow left-up     (~198.43°) */
+    // draw_line(center, (point){100, 200});
 
-    /* Octant 6: steep left-up       (~251.57°) */
-    draw_line(center, (point){300, 0});
+    // /* Octant 6: steep left-up       (~251.57°) */
+    // draw_line(center, (point){300, 0});
 
-    /* Octant 7: steep right-up      (~288.43°) */
-    draw_line(center, (point){500, 0});
+    // /* Octant 7: steep right-up      (~288.43°) */
+    // draw_line(center, (point){500, 0});
 
-    /* Octant 8: shallow right-up    (~341.57°) */
-    draw_line(center, (point){700, 200});
+    // /* Octant 8: shallow right-up    (~341.57°) */
+    // draw_line(center, (point){700, 200});
 
 }
 
@@ -293,7 +334,7 @@ int main(int argc, char *argv[])
     bool running = true;
     SDL_Event event;
     /* --- load obj ---*/
-    //load_obj("src/utah_teapot.obj");
+    load_obj("src/utah_teapot.obj");
 
     while (running) {
         /* --- Process Input --- */
