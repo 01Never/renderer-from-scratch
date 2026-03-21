@@ -7,4 +7,4 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(SDL3 REQUIRED)
 
 add_executable(renderer src/main.c)
-target_link_libraries(renderer PRIVATE SDL3::SDL3)
+target_link_libraries(renderer PRIVATE SDL3::SDL3 m)

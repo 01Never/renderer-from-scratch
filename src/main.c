@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #define SCREEN_WIDTH  800
 #define SCREEN_HEIGHT 600
@@ -44,6 +45,7 @@ typedef struct
     float y;
 } vec2;
 
+void rotate_x();
 void draw_line(point p1, point p2);
 
 /* ---------- OBJ Loader ---------- */
@@ -66,6 +68,7 @@ static int load_obj(const char *path)
             vec3 v;
             if (sscanf(line, "v %f %f %f", &v.x, &v.y, &v.z) == 3)
             {
+                //TODO safly reallocate and make this effiecnt via geometric growth
                 vert  = realloc(vert,  (vert_count + 1) * sizeof(vec3));
                 verts2d = realloc(verts2d, (vert_count + 1) * sizeof(point));
                 vert[vert_count] = v;
@@ -138,17 +141,7 @@ static void clear_screen(uint32_t color)
 //     { 100, -100,  100},  /* 6: right bottom back  */
 //     {-100, -100,  100},  /* 7: left  bottom back  */
 // };
-
-static point vert2[8] = {
-    {0, 0},  /* 0: left  top    front */
-    {0, 0},  /* 1: right top    front */
-    {0, 0},  /* 2: right bottom front */
-    {0, 0},  /* 3: left  bottom front */
-    {0, 0},  /* 4: left  top    back  */
-    {0, 0},  /* 5: right top    back  */
-    {0, 0},  /* 6: right bottom back  */
-    {0, 0},  /* 7: left  bottom back  */
-};
+  
 
 static float angle_y = 0.0f;
 static float angle_x = 0.0f;
@@ -157,6 +150,10 @@ static float angle_z = 0.0f;
 /* ---------- The Render Function ---------- */
 static void render(void)
 {
+    vec3 vert2[vert_count];
+    memset(vert2, 0 , sizeof(vert2));
+    
+
     clear_screen(color_rgb(20, 20, 40));
 
     angle_y = fmodf(angle_y + 0.010f, 2.0f * (float)M_PI);
@@ -187,6 +184,11 @@ static void render(void)
         // vert2[i].x = (int)(rx3 / (rz3 + 300) * 300 + 400);
         // vert2[i].y = (int)(ry3 / (rz3 + 300) * 300 + 300);
 
+
+        vert2[i].x = (int)(rx3 / (rz3 + 10) * 300 + 400);
+        vert2[i].y = (int)(ry3 / (rz3 + 10) * 300 + 300);
+        //vert2[i].z = 0;
+
         /* Ortho aka no depth */
         // vert2[i].x = (int)(rx3 + 400);
         // vert2[i].y = (int)(ry3 + 300);
@@ -197,6 +199,15 @@ static void render(void)
         
     }
 
+    point p1;
+    point p2;
+
+    for(int i = 0; i < face_count; i++)
+    {
+        p1 = (point){(int)vert2[(int)facev[i].a.x - 1].x, (int)vert2[(int)facev[i].a.x - 1].y};
+        p2 = (point){(int)vert2[(int)facev[i].b.x - 1].x, (int)vert2[(int)facev[i].b.x - 1].y};
+        draw_line(p1, p2);
+    }
     // /* front face */
     // draw_line(vert2[0], vert2[1]);
     // draw_line(vert2[1], vert2[2]);
